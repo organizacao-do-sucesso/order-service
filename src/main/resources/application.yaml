@@ -19,3 +19,25 @@ spring:
     properties:
       hibernate:
         default_schema: orders
+
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
+      timeout: 500ms
+      connect-timeout: 500ms
+
+  cache:
+    type: redis
+
+store:
+  cache:
+    products-ttl: ${CACHE_PRODUCTS_TTL:5m}
+    exchanges-ttl: ${CACHE_EXCHANGES_TTL:1m}
+
+management:
+  endpoints:
+    web:
+      base-path: /order/actuator
+      exposure:
+        include: [ 'health', 'prometheus' ]

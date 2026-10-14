@@ -11,8 +11,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import feign.FeignException;
-import store.product.ProductController;
 import store.product.ProductOut;
 
 @Service
@@ -24,10 +22,10 @@ public class OrderService {
     private OrderRepository orderRepository;
 
     @Autowired
-    private ProductController productController;
+    private ProductService productService;
 
     @Autowired
-    private ExchangeClient exchangeClient;
+    private ExchangeService exchangeService;
 
     public Order create(Order order) {
         if (order.items() == null || order.items().isEmpty()) {
@@ -39,7 +37,7 @@ public class OrderService {
             if (item.quantity() == null || item.quantity() <= 0) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid quantity");
             }
-            ProductOut product = findProduct(item.idProduct());
+            ProductOut product = productService.findById(item.idProduct());
             BigDecimal price = BigDecimal.valueOf(product.price());
             item.price(price)
                 .total(price.multiply(BigDecimal.valueOf(item.quantity())));
@@ -68,44 +66,11 @@ public class OrderService {
         }
 
         String target = currency.toUpperCase();
-        BigDecimal rate = rate(target, idAccount);
+        BigDecimal rate = BigDecimal.valueOf(
+            exchangeService.exchange(BASE_CURRENCY, target, idAccount).sell()
+        );
         order.items().forEach(i -> i.total(convert(i.total(), rate)));
         return order.total(convert(order.total(), rate)).currency(target);
-    }
-
-    private ProductOut findProduct(String idProduct) {
-        try {
-            ProductOut product = productController.findById(idProduct).getBody();
-            if (product == null) {
-                throw productNotFound(idProduct);
-            }
-            return product;
-        } catch (FeignException.NotFound e) {
-            throw productNotFound(idProduct);
-        }
-    }
-
-    private ResponseStatusException productNotFound(String idProduct) {
-        return new ResponseStatusException(HttpStatus.BAD_REQUEST, "Product not found: " + idProduct);
-    }
-
-    private BigDecimal rate(String currency, String idAccount) {
-        if (!currency.matches("[A-Z]{3}")) {
-            throw currencyNotSupported(currency);
-        }
-        try {
-            ExchangeOut ex = exchangeClient.exchange(BASE_CURRENCY, currency, idAccount);
-            return BigDecimal.valueOf(ex.sell());
-        } catch (FeignException.NotFound | FeignException.BadRequest
-                 | FeignException.UnprocessableEntity e) {
-            throw currencyNotSupported(currency);
-        } catch (FeignException e) {
-            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Exchange service unavailable");
-        }
-    }
-
-    private ResponseStatusException currencyNotSupported(String currency) {
-        return new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Currency not supported: " + currency);
     }
 
     private BigDecimal convert(BigDecimal value, BigDecimal rate) {
