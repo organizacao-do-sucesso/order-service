@@ -3,6 +3,7 @@ package store.order;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,7 +46,7 @@ public class OrderService {
             total = total.add(item.total());
         }
 
-        order.date(LocalDateTime.now()).total(total);
+        order.date(LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS)).total(total);
         return orderRepository.save(new OrderModel(order)).to();
     }
 
