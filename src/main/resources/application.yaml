@@ -20,24 +20,31 @@ spring:
       hibernate:
         default_schema: orders
 
-  data:
-    redis:
-      host: ${REDIS_HOST:redis}
-      port: ${REDIS_PORT:6379}
-      timeout: 500ms
-      connect-timeout: 500ms
-
-  cache:
-    type: redis
-
-store:
-  cache:
-    products-ttl: ${CACHE_PRODUCTS_TTL:5m}
-    exchanges-ttl: ${CACHE_EXCHANGES_TTL:1m}
+# JSON logs on stdout, collected by Alloy and shipped to Loki (see the observability repo)
+logging:
+  structured:
+    format:
+      console: ecs
+  level:
+    store: info
 
 management:
   endpoints:
     web:
       base-path: /order/actuator
       exposure:
-        include: [ 'health', 'prometheus' ]
+        include: [ 'health', 'info', 'prometheus' ]
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      # buckets so Grafana can compute p95/p99 latency
+      percentiles-histogram:
+        http.server.requests: true
+        http.client.requests: true
+      slo:
+        http.server.requests: 50ms,100ms,250ms,500ms,1s
