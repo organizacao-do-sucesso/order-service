@@ -1,11 +1,12 @@
 pipeline {
     agent any
+
     environment {
         SERVICE = 'order'
-        NAME = "luisacarvalho/${env.SERVICE}"
     }
+
     stages {
-        stage('Dependecies') {
+        stage('Dependencies') {
             steps {
                 build job: 'order', wait: true
                 build job: 'product', wait: true
@@ -21,12 +22,22 @@ pipeline {
                 withCredentials([usernamePassword(
                     credentialsId: 'dockerhub-credential',
                     usernameVariable: 'USERNAME',
-                    passwordVariable: 'TOKEN')])
-                {
-                    sh "docker login -u $USERNAME -p $TOKEN"
-                    sh "docker buildx create --use --platform=linux/arm64,linux/amd64 --node multi-platform-builder-${env.SERVICE} --name multi-platform-builder-${env.SERVICE}"
-                    sh "docker buildx build --platform=linux/arm64,linux/amd64 --push --tag ${env.NAME}:latest --tag ${env.NAME}:${env.BUILD_ID} -f Dockerfile ."
-                    sh "docker buildx rm --force multi-platform-builder-${env.SERVICE}"
+                    passwordVariable: 'TOKEN'
+                )]) {
+                    sh '''
+                        echo "$TOKEN" | docker login -u "$USERNAME" --password-stdin
+                        docker buildx create --use \
+                          --platform=linux/arm64,linux/amd64 \
+                          --node "multi-platform-builder-$SERVICE" \
+                          --name "multi-platform-builder-$SERVICE"
+                        docker buildx build \
+                          --platform=linux/arm64,linux/amd64 \
+                          --push \
+                          --tag "$USERNAME/$SERVICE:latest" \
+                          --tag "$USERNAME/$SERVICE:$BUILD_ID" \
+                          -f Dockerfile .
+                        docker buildx rm --force "multi-platform-builder-$SERVICE"
+                    '''
                 }
             }
         }
