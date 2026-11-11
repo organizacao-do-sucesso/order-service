@@ -20,6 +20,13 @@ spring:
       hibernate:
         default_schema: orders
 
+  cloud:
+    openfeign:
+      client:
+        config:
+          product:
+            error-decoder: store.order.ProductClient
+
 # JSON logs on stdout, collected by Alloy and shipped to Loki (see the observability repo)
 logging:
   structured:

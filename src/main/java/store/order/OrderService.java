@@ -16,6 +16,7 @@ import org.springframework.web.server.ResponseStatusException;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
+import store.product.ProductController;
 import store.product.ProductOut;
 
 @Service
@@ -29,7 +30,7 @@ public class OrderService {
     private OrderRepository orderRepository;
 
     @Autowired
-    private ProductService productService;
+    private ProductController productController;
 
     @Autowired
     private ExchangeService exchangeService;
@@ -62,8 +63,11 @@ public class OrderService {
             if (item.quantity() == null || item.quantity() <= 0) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid quantity");
             }
-            ProductOut product = productService.findById(item.idProduct());
-            BigDecimal price = BigDecimal.valueOf(product.price());
+            if (item.idProduct() == null || item.idProduct().isBlank()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Product id is required");
+            }
+            ProductOut product = productController.findById(item.idProduct()).getBody();
+            BigDecimal price = product.price();
             item.price(price)
                 .total(price.multiply(BigDecimal.valueOf(item.quantity())));
             total = total.add(item.total());
@@ -101,9 +105,7 @@ public class OrderService {
         }
 
         String target = currency.toUpperCase();
-        BigDecimal rate = BigDecimal.valueOf(
-            exchangeService.exchange(BASE_CURRENCY, target, idAccount).sell()
-        );
+        BigDecimal rate = exchangeService.exchange(BASE_CURRENCY, target, idAccount).sell();
         order.items().forEach(i -> i.total(convert(i.total(), rate)));
         return order.total(convert(order.total(), rate)).currency(target);
     }

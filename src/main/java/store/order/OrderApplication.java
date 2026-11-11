@@ -4,8 +4,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 
+import store.product.ProductController;
+
 @SpringBootApplication
-@EnableFeignClients(clients = { ExchangeClient.class })
+@EnableFeignClients(clients = { ProductController.class, ExchangeClient.class })
 public class OrderApplication {
 
     public static void main(String[] args) {

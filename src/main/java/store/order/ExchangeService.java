@@ -18,9 +18,6 @@ public class ExchangeService {
     private ExchangeClient exchangeClient;
 
     public ExchangeOut exchange(String from, String to, String idAccount) {
-        if (!to.matches("[A-Z]{3}")) {
-            throw currencyNotSupported(to);
-        }
         try {
             return exchangeClient.exchange(from, to, idAccount);
         } catch (FeignException.NotFound | FeignException.BadRequest
