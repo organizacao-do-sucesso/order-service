@@ -16,6 +16,7 @@ import org.springframework.web.server.ResponseStatusException;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
+import store.exchange.ExchangeController;
 import store.product.ProductController;
 import store.product.ProductOut;
 
@@ -33,7 +34,7 @@ public class OrderService {
     private ProductController productController;
 
     @Autowired
-    private ExchangeService exchangeService;
+    private ExchangeController exchangeController;
 
     // business metrics, scraped by prometheus at /order/actuator/prometheus
     private final Counter ordersCreated;
@@ -105,7 +106,7 @@ public class OrderService {
         }
 
         String target = currency.toUpperCase();
-        BigDecimal rate = exchangeService.exchange(BASE_CURRENCY, target, idAccount).sell();
+        BigDecimal rate = exchangeController.exchange(BASE_CURRENCY, target, idAccount).getBody().sell();
         order.items().forEach(i -> i.total(convert(i.total(), rate)));
         return order.total(convert(order.total(), rate)).currency(target);
     }

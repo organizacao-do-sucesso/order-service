@@ -65,6 +65,11 @@
             <artifactId>product</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>store</groupId>
+            <artifactId>exchange</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>org.postgresql</groupId>

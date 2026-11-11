@@ -1,21 +1,21 @@
 package store.order;
 
-import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
-@FeignClient(
-    name = "exchange",
-    url = "http://exchange:8000"
-)
-public interface ExchangeClient {
+import feign.Response;
+import feign.codec.ErrorDecoder;
 
-    @GetMapping("/exchanges/{from}/{to}")
-    public ExchangeOut exchange(
-        @PathVariable("from") String from,
-        @PathVariable("to") String to,
-        @RequestHeader("id-account") String idAccount
-    );
+// translates errors from the exchange contract's Feign client (store.exchange.ExchangeController)
+// registered in application.yaml: spring.cloud.openfeign.client.config.exchange.error-decoder
+public class ExchangeClient implements ErrorDecoder {
+
+    @Override
+    public Exception decode(String methodKey, Response response) {
+        return switch (response.status()) {
+            case 400, 404, 422 -> new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Currency not supported");
+            default -> new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Exchange service unavailable");
+        };
+    }
 
 }

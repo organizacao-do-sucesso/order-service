@@ -10,6 +10,7 @@ pipeline {
             steps {
                 build job: 'order', wait: true
                 build job: 'product', wait: true
+                build job: 'exchange', wait: true
             }
         }
         stage('Build') {

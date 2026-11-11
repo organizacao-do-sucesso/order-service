@@ -26,6 +26,8 @@ spring:
         config:
           product:
             error-decoder: store.order.ProductClient
+          exchange:
+            error-decoder: store.order.ExchangeClient
 
 # JSON logs on stdout, collected by Alloy and shipped to Loki (see the observability repo)
 logging:
