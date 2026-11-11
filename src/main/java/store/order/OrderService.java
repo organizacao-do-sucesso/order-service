@@ -42,8 +42,8 @@ public class OrderService {
     private final DistributionSummary orderItems;
 
     public OrderService(MeterRegistry registry) {
-        this.ordersCreated = Counter.builder("orders.created")
-            .description("Orders successfully created")
+        this.ordersCreated = Counter.builder("orders.placed")
+            .description("Orders successfully placed")
             .register(registry);
         this.orderAmount = DistributionSummary.builder("orders.amount")
             .description("Order total in USD")
