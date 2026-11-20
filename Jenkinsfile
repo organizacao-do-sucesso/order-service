@@ -42,5 +42,33 @@ pipeline {
                 }
             }
         }
+        stage('Deploy to K8s') {
+            environment {
+                CLUSTER = 'eks-store'
+                REGION = 'us-east-1'
+                NAMESPACE = 'store'
+            }
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub-credential',
+                        usernameVariable: 'USERNAME',
+                        passwordVariable: 'TOKEN'
+                    ),
+                    usernamePassword(
+                        credentialsId: 'aws-credential',
+                        usernameVariable: 'AWS_ACCESS_KEY_ID',
+                        passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                    )
+                ]) {
+                    sh '''
+                        export KUBECONFIG="$WORKSPACE/.kubeconfig"
+                        aws eks update-kubeconfig --name "$CLUSTER" --region "$REGION"
+                        kubectl -n "$NAMESPACE" set image "deployment/$SERVICE" "$SERVICE=$USERNAME/$SERVICE:$BUILD_ID"
+                        kubectl -n "$NAMESPACE" rollout status "deployment/$SERVICE" --timeout=300s
+                    '''
+                }
+            }
+        }
     }
 }
